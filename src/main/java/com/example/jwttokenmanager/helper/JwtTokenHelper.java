@@ -3,8 +3,11 @@ package com.example.jwttokenmanager.helper;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
-import org.springframework.security.core.userdetails.User;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 
 import java.util.Date;
@@ -55,8 +58,47 @@ public class JwtTokenHelper {
         return getClaimFromToken(token, Claims::getSubject);
     }
 
-    public boolean validateToken(String token, UserDetails userDetails) {
+    public boolean validateToken(HttpServletRequest request, String tokenFromRequest, UserDetails userDetails) {
+
+        String token = null, username = null;
+
+        // Check if token starts with Bearer
+        if (tokenFromRequest != null && tokenFromRequest.startsWith("Bearer")) {
+            token = tokenFromRequest.substring(7);
+            try {
+                // Fetch username
+                username = getUsernameFromToken(token);
+            } catch (Exception e) {
+                System.out.println("Unable to generate JWT token - " + e.getMessage());
+            }
+
+            // Validate the token
+            if (username != null && SecurityContextHolder.getContext().getAuthentication() != null) {
+                // Fetch UserDetails using username
+                if (validateTokenUsernameAndExpiry(token, userDetails.getUsername())) {
+                    // Perform authentication
+                    UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(
+                            userDetails,
+                            userDetails.getAuthorities()
+                    );
+                    usernamePasswordAuthenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
+
+                    // Token is validated
+                    return true;
+                } else {
+                    System.out.println("Invalid JWT token");
+                }
+            }
+        } else {
+            System.out.println("Auth not of Bearer");
+        }
+
+        return false;
+    }
+
+    private boolean validateTokenUsernameAndExpiry(String token, String username) {
         String usernameFromToken = getUsernameFromToken(token);
-        return usernameFromToken.equals(userDetails.getUsername()) && !isTokenExpired(token);
+        return usernameFromToken.equals(username) && !isTokenExpired(token);
     }
 }

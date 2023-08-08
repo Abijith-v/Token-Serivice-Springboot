@@ -1,4 +1,4 @@
-package com.example.jwttokenmanager.security;
+package com.example.jwttokenmanager.response;
 
 import lombok.Data;
 
