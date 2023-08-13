@@ -5,22 +5,22 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Component
 public class JwtTokenHelper {
 
-    public static final long TOKEN_VALIDITY = 18000;
+    public static final long TOKEN_VALIDITY = 108000;
 
-    private static final String SECRET = "mySecret";
+    public static final String SECRET = "mySecret";
 
     public <T> T getClaimFromToken(String token, Function<Claims, T> claimsTFunction) {
         Claims claims = getAllClaimsFromToken(token);
@@ -41,13 +41,16 @@ public class JwtTokenHelper {
     }
 
     public String generateToken(UserDetails userDetails) {
-        Map<String, Object> claims = new HashMap<>();
-        return performTokenGeneration(claims, userDetails.getUsername());
+        List<String> roles = userDetails.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority).collect(Collectors.toList());
+        return performTokenGeneration(roles, userDetails.getUsername());
     }
 
-    private String performTokenGeneration(Map<String, Object> claims, String subject) {
+    private String performTokenGeneration(List<String> roles, String subject) {
+
+//        System.out.println("performTokenGeneration - " + role + " -> " + allRoles.getOrDefault(role, "NORMAL"));
         return Jwts.builder()
-                .setClaims(claims)
+                .claim("roles", roles)//allRoles.getOrDefault(role, "NORMAL"))
                 .setSubject(subject)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + TOKEN_VALIDITY * 1000))

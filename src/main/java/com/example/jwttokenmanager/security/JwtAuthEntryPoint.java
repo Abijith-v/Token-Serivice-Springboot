@@ -17,8 +17,6 @@ public class JwtAuthEntryPoint implements AuthenticationEntryPoint {
             HttpServletResponse response,
             AuthenticationException authException
     ) throws IOException, ServletException {
-
-        // If unauthorized personal tries to access our REST APIs, control reaches here
         response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Access denied!");
     }
 }
