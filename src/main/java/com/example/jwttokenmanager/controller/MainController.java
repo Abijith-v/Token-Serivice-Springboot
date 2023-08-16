@@ -13,10 +13,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.web.bind.annotation.*;
@@ -24,6 +20,7 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -51,15 +48,17 @@ public class MainController {
         );
 
         if (isAuthenticated) {
-
             UserDetails userDetails = userDetailsService.loadUserByUsername(requestPayload.getUsername());
             String token = jwtTokenHelper.generateToken(userDetails);
-            // Set response
-            JwtAuthResponse response = new JwtAuthResponse();
-            response.setToken(token);
-            return new ResponseEntity<>(response, HttpStatus.OK);
+            return new ResponseEntity<>(new JwtAuthResponse(
+                "Token generated successfully",
+                token
+            ), HttpStatus.OK);
         } else {
-            return new ResponseEntity<>(new JwtAuthResponse(), HttpStatus.I_AM_A_TEAPOT);
+            return new ResponseEntity<>(new JwtAuthResponse(
+                "Token generation failed",
+                null
+            ), HttpStatus.I_AM_A_TEAPOT);
         }
     }
 
@@ -82,7 +81,7 @@ public class MainController {
         }
     }
 
-    @PostMapping("/admin/validate")
+    @GetMapping("/admin/validate")
     public ResponseEntity<JwtValidationResponse> validateIfUserIsAdmin(@RequestHeader("Authorization") String token) {
         try {
             if (adminTokenAuthenticator.validateAdminToken(token)) {
@@ -103,5 +102,19 @@ public class MainController {
                     false
             ), HttpStatus.UNAUTHORIZED);
         }
+    }
+
+    @GetMapping("/auth/revoke")
+    public ResponseEntity<?> logoutUser(@RequestHeader("Authorization") String token) {
+
+        try {
+            if (token.startsWith("Bearer") && jwtTokenHelper.revokeToken(token.substring(7))) {
+                return new ResponseEntity<>(Map.of("message", "Logged out"), HttpStatus.OK);
+            }
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
+
+        return new ResponseEntity<>(Map.of("message", "Failed to log out"), HttpStatus.FORBIDDEN);
     }
 }

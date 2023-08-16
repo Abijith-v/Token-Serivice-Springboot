@@ -1,9 +1,12 @@
 package com.example.jwttokenmanager.helper;
 
+import com.example.jwttokenmanager.model.BlacklistedToken;
+import com.example.jwttokenmanager.repository.BlacklistedTokenRepository;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -21,6 +24,9 @@ public class JwtTokenHelper {
     public static final long TOKEN_VALIDITY = 108000;
 
     public static final String SECRET = "mySecret";
+
+    @Autowired
+    private BlacklistedTokenRepository blacklistedTokenRepository;
 
     public <T> T getClaimFromToken(String token, Function<Claims, T> claimsTFunction) {
         Claims claims = getAllClaimsFromToken(token);
@@ -69,6 +75,11 @@ public class JwtTokenHelper {
         if (tokenFromRequest != null && tokenFromRequest.startsWith("Bearer")) {
             token = tokenFromRequest.substring(7);
             try {
+                // Check if token is blacklisted
+                if (blacklistedTokenRepository.findByToken(token) != null) {
+                    System.out.println("Token is blacklisted");
+                    return false;
+                }
                 // Fetch username
                 username = getUsernameFromToken(token);
             } catch (Exception e) {
@@ -103,5 +114,17 @@ public class JwtTokenHelper {
     private boolean validateTokenUsernameAndExpiry(String token, String username) {
         String usernameFromToken = getUsernameFromToken(token);
         return usernameFromToken.equals(username) && !isTokenExpired(token);
+    }
+
+    public boolean revokeToken(String token) {
+        System.out.println(token);
+        if (getUsernameFromToken(token) != null) {
+            BlacklistedToken blacklistedToken = new BlacklistedToken();
+            blacklistedToken.setToken(token);
+            BlacklistedToken savedBlacklistedToken = blacklistedTokenRepository.save(blacklistedToken);
+            return savedBlacklistedToken.getId() != null;
+        } else {
+            return false;
+        }
     }
 }

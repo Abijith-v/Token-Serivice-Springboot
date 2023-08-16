@@ -17,10 +17,6 @@ public class Users implements UserDetails {
     private Long userId;
     private String email;
     private String password;
-    private String name;
-    private Integer age;
-    private String city;
-    private String state;
 
     @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     @JoinTable(
