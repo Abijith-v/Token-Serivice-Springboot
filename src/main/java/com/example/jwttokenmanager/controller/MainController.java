@@ -19,10 +19,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
-import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
 
 @RestController
 public class MainController {
@@ -43,8 +40,8 @@ public class MainController {
     public ResponseEntity<JwtAuthResponse> getToken(@RequestBody JwtAuthRequestPayload requestPayload) {
 
         boolean isAuthenticated = requestTokenAuthenticator.authenticate(
-                requestPayload.getUsername(),
-                requestPayload.getPassword()
+            requestPayload.getUsername(),
+            requestPayload.getPassword()
         );
 
         if (isAuthenticated) {
@@ -86,20 +83,20 @@ public class MainController {
         try {
             if (adminTokenAuthenticator.validateAdminToken(token)) {
                 return new ResponseEntity<>(new JwtValidationResponse(
-                        "Validation complete",
-                        true
+                    "Validation complete",
+                    true
                 ), HttpStatus.OK);
             }
             else {
                 return new ResponseEntity<>(new JwtValidationResponse(
-                        "Validation failed",
-                        false
+                    "Validation failed",
+                    false
                 ), HttpStatus.UNAUTHORIZED);
             }
         } catch(Exception e) {
             return new ResponseEntity<>(new JwtValidationResponse(
-                    "Validation failed - " + e.getMessage(),
-                    false
+                "Validation failed - " + e.getMessage(),
+                false
             ), HttpStatus.UNAUTHORIZED);
         }
     }
@@ -116,5 +113,10 @@ public class MainController {
         }
 
         return new ResponseEntity<>(Map.of("message", "Failed to log out"), HttpStatus.FORBIDDEN);
+    }
+
+    @GetMapping("auth/get/username")
+    public String getUsernameFromToken(@RequestHeader("Authorization") String token) {
+        return jwtTokenHelper.getUsernameFromToken(token);
     }
 }

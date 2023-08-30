@@ -3,6 +3,7 @@ package com.example.jwttokenmanager.helper;
 import com.example.jwttokenmanager.model.BlacklistedToken;
 import com.example.jwttokenmanager.repository.BlacklistedTokenRepository;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import jakarta.servlet.http.HttpServletRequest;
@@ -21,7 +22,7 @@ import java.util.stream.Collectors;
 @Component
 public class JwtTokenHelper {
 
-    public static final long TOKEN_VALIDITY = 108000;
+    public static final long TOKEN_VALIDITY = 1200; // 20 minutes
 
     public static final String SECRET = "mySecret";
 
